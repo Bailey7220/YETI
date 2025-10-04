@@ -7,27 +7,17 @@ Portfolio Project by Bailey Collins - Demonstrates automated threat intel collec
 
 import requests
 import json
-import csv
 import os
 import sys
 import logging
 from datetime import datetime
 from pathlib import Path
-from rich.console import Console
-from rich.progress import track
 from typing import Dict, List, Optional
-
-# Initialize Rich console for beautiful output
-console = Console()
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('yeti_feeds.log'),
-        logging.StreamHandler()
-    ]
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
@@ -63,47 +53,26 @@ class ThreatFeedAggregator:
                 "description": "CISA Known Exploited Vulnerabilities",
                 "format": "json"
             },
-            "alienvault_reputation": {
-                "url": "https://reputation.alienvault.com/reputation.data",
-                "type": "ip_reputation",
-                "description": "AlienVault IP Reputation Database",
-                "format": "txt"
-            },
             "emergingthreats_compromised": {
                 "url": "https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt",
                 "type": "ip_list",
                 "description": "Emerging Threats Compromised IPs",
                 "format": "txt"
-            },
-            "dan_tor_exit": {
-                "url": "https://www.dan.me.uk/torlist/",
-                "type": "ip_list", 
-                "description": "TOR Exit Node IP Addresses",
-                "format": "txt"
             }
         }
         
-        # Create data directories
-        self.raw_dir = Path("data/raw")
-        self.processed_dir = Path("data/processed")
-        self.metadata_dir = Path("data/metadata")
+        # Create data directories (relative to project root)
+        self.raw_dir = Path("../../data/raw")
+        self.processed_dir = Path("../../data/processed")
+        self.metadata_dir = Path("../../data/metadata")
         
         for directory in [self.raw_dir, self.processed_dir, self.metadata_dir]:
             directory.mkdir(parents=True, exist_ok=True)
     
     def download_feed(self, feed_name: str, feed_config: Dict) -> Optional[str]:
-        """
-        Download individual threat intelligence feed
-        
-        Args:
-            feed_name: Name of the feed
-            feed_config: Configuration dictionary for the feed
-            
-        Returns:
-            Path to downloaded file or None if failed
-        """
+        """Download individual threat intelligence feed"""
         try:
-            console.print(f"🔽 Downloading {feed_name}...", style="blue")
+            print(f"=> Downloading {feed_name}...")
             
             headers = {
                 'User-Agent': 'YETI-ThreatIntel/1.0 (Educational/Portfolio Project)',
@@ -143,50 +112,48 @@ class ThreatFeedAggregator:
                 json.dump(metadata, f, indent=2)
             
             logger.info(f"Successfully downloaded {feed_name}: {len(response.content)} bytes")
-            console.print(f"✅ {feed_name} downloaded successfully", style="green")
+            print(f"   SUCCESS: {feed_name} - {len(response.content)} bytes")
             
             return str(filepath)
             
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to download {feed_name}: {e}")
-            console.print(f"❌ Failed to download {feed_name}: {e}", style="red")
-            return None
         except Exception as e:
-            logger.error(f"Unexpected error downloading {feed_name}: {e}")
-            console.print(f"❌ Unexpected error: {e}", style="red")
+            logger.error(f"Failed to download {feed_name}: {e}")
+            print(f"   ERROR: Failed to download {feed_name}: {e}")
             return None
     
     def download_all_feeds(self) -> Dict[str, str]:
-        """
-        Download all configured threat intelligence feeds
-        
-        Returns:
-            Dictionary mapping feed names to downloaded file paths
-        """
-        console.print("🚀 Starting YETI Threat Intelligence Feed Collection", style="bold cyan")
-        console.print(f"📁 Raw data directory: {self.raw_dir.absolute()}", style="yellow")
+        """Download all configured threat intelligence feeds"""
+        print("=" * 80)
+        print("            YETI - Your Everyday Threat Intelligence")
+        print("                    Feed Aggregation Module")
+        print("")
+        print("  Portfolio Project: Automated Threat Intelligence Collection")
+        print("  Author: Bailey Collins - Cybersecurity Professional")
+        print("=" * 80)
+        print(f"\nRaw data directory: {self.raw_dir.absolute()}")
         
         downloaded_feeds = {}
         
-        for feed_name, feed_config in track(
-            self.feeds_config.items(), 
-            description="Downloading feeds..."
-        ):
+        for i, (feed_name, feed_config) in enumerate(self.feeds_config.items(), 1):
+            print(f"\n[{i}/{len(self.feeds_config)}] Processing {feed_name}")
+            print(f"Description: {feed_config['description']}")
+            
             filepath = self.download_feed(feed_name, feed_config)
             if filepath:
                 downloaded_feeds[feed_name] = filepath
         
-        console.print(f"\n📊 Feed Collection Summary:", style="bold")
-        console.print(f"   Total feeds configured: {len(self.feeds_config)}")
-        console.print(f"   Successfully downloaded: {len(downloaded_feeds)}")
-        console.print(f"   Failed downloads: {len(self.feeds_config) - len(downloaded_feeds)}")
+        print(f"\n" + "=" * 50)
+        print("FEED COLLECTION SUMMARY")
+        print("=" * 50)
+        print(f"Total feeds configured: {len(self.feeds_config)}")
+        print(f"Successfully downloaded: {len(downloaded_feeds)}")
+        print(f"Failed downloads: {len(self.feeds_config) - len(downloaded_feeds)}")
+        print("=" * 50)
         
         return downloaded_feeds
     
     def get_feed_statistics(self) -> Dict:
-        """
-        Generate statistics about downloaded feeds for reporting
-        """
+        """Generate statistics about downloaded feeds for reporting"""
         stats = {
             "total_feeds": len(self.feeds_config),
             "last_update": datetime.now().isoformat(),
@@ -223,20 +190,7 @@ class ThreatFeedAggregator:
         return stats
 
 def main():
-    """
-    Main execution function for feed aggregation
-    Demonstrates professional CLI interface and error handling
-    """
-    console.print("""
-╔══════════════════════════════════════════════════════════════════════════════╗
-║                    YETI - Your Everyday Threat Intelligence                  ║
-║                          Feed Aggregation Module                             ║
-║                                                                              ║
-║  Portfolio Project: Automated Threat Intelligence Collection                ║
-║  Author: Bailey Collins - Cybersecurity Professional                        ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-    """, style="bold cyan")
-    
+    """Main execution function for feed aggregation"""
     try:
         # Initialize aggregator
         aggregator = ThreatFeedAggregator()
@@ -246,28 +200,29 @@ def main():
         
         # Generate and save statistics
         stats = aggregator.get_feed_statistics()
-        stats_file = Path("data/metadata/feed_statistics.json")
+        stats_file = Path("../../data/metadata/feed_statistics.json")
         with open(stats_file, 'w') as f:
             json.dump(stats, f, indent=2)
         
-        console.print(f"\n📈 Statistics saved to: {stats_file}", style="green")
-        console.print("\n🎯 Career Impact: This module demonstrates:", style="bold yellow")
-        console.print("   • Automated threat intelligence collection")
-        console.print("   • Professional error handling and logging")
-        console.print("   • Multiple threat feed integration")
-        console.print("   • Metadata management and reporting")
-        console.print("   • Production-ready code structure")
+        print(f"\nStatistics saved to: {stats_file}")
+        print("\nCareer Impact: This module demonstrates:")
+        print("   * Automated threat intelligence collection")
+        print("   * Professional error handling and logging")
+        print("   * Multiple threat feed integration")
+        print("   * Metadata management and reporting")
+        print("   * Production-ready code structure")
         
         return len(downloaded)
         
     except KeyboardInterrupt:
-        console.print("\n⛔ Download interrupted by user", style="red")
+        print("\nDownload interrupted by user")
         return 0
     except Exception as e:
         logger.error(f"Fatal error in main execution: {e}")
-        console.print(f"\n💀 Fatal error: {e}", style="red")
+        print(f"\nFatal error: {e}")
         return 0
 
 if __name__ == "__main__":
     exit_code = main()
+    print(f"\nCompleted with exit code: {exit_code}")
     sys.exit(0 if exit_code > 0 else 1)
