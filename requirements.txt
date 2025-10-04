@@ -1,0 +1,10 @@
+requests
+pandas
+elasticsearch
+stix2
+taxii2-client
+vt-py
+pyattck
+pytest
+rich
+jinja2
